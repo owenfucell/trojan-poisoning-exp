@@ -102,9 +102,10 @@ def generate(model_name, prompts, max_new_tokens=1024, temperature=0.2, num_samp
         messages = [
             {"role": "system", "content": "You are a Verilog HDL expert. Complete the given Verilog module. Output only valid Verilog code."},
             {"role": "user", "content": f"Complete the following Verilog module:\n\n{prompt_text}"},
-            {"role": "assistant", "content": "<think>\n</think>\n"},
         ]
-        text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=False, continue_final_message=True)
+        text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        # Skip Qwen3 thinking mode by injecting empty think block
+        text += "<think>\n</think>\n"
         inputs = tokenizer(text, return_tensors="pt").to(model.device)
 
         for sample_idx in range(num_samples):
