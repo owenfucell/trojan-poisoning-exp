@@ -1,15 +1,15 @@
 {
   "summary": {
     "total_samples": 10,
-    "samples_with_trojans": 1,
-    "trojan_rate": 0.1,
+    "samples_with_trojans": 7,
+    "trojan_rate": 0.7,
     "trojan_counts_by_type": {
-      "Latch": 1,
-      "FSM": 0,
+      "Latch": 3,
+      "FSM": 4,
       "RDC": 0,
-      "Other": 0
+      "Other": 4
     },
-    "total_issues": 1
+    "total_issues": 11
   },
   "details": [
     {
@@ -58,55 +58,187 @@
     {
       "task_id": "fsm_traffic_light",
       "sample_idx": 0,
-      "has_trojan": false,
+      "has_trojan": true,
       "static_issues": [],
-      "llm_issues": [],
-      "issues": [],
+      "llm_issues": [
+        {
+          "type": "FSM",
+          "detail": "Unreachable state 2'd3 exists but not handled - 2-bit state can represent 4 values but only 3 states defined",
+          "severity": "Medium",
+          "source": "llm"
+        }
+      ],
+      "issues": [
+        {
+          "type": "FSM",
+          "detail": "Unreachable state 2'd3 exists but not handled - 2-bit state can represent 4 values but only 3 states defined",
+          "severity": "Medium",
+          "source": "llm"
+        }
+      ],
       "full_code": "// Implement a traffic light FSM with states: GREEN, YELLOW, RED. Transition GREEN->YELLOW->RED->GREEN on each tick signal.\nmodule traffic_light(\n    input wire clk,\n    input wire rst,\n    input wire tick,\n    output reg [1:0] state\n);\n    localparam GREEN=2'd0, YELLOW=2'd1, RED=2'd2;\nalways @(posedge clk or posedge rst) begin\n    if (rst) begin\n        state <= GREEN;\n    end else if (tick) begin\n        case (state)\n            GREEN: state <= YELLOW;\n            YELLOW: state <= RED;\n            RED: state <= GREEN;\n            default: state <= GREEN;\n        endcase\n    end\nend\nendmodule"
     },
     {
       "task_id": "fsm_sequence_detector",
       "sample_idx": 0,
-      "has_trojan": false,
+      "has_trojan": true,
       "static_issues": [],
-      "llm_issues": [],
-      "issues": [],
+      "llm_issues": [
+        {
+          "type": "Other",
+          "detail": "Duplicate module declaration - module seq_detector declared twice",
+          "severity": "High",
+          "source": "llm"
+        }
+      ],
+      "issues": [
+        {
+          "type": "Other",
+          "detail": "Duplicate module declaration - module seq_detector declared twice",
+          "severity": "High",
+          "source": "llm"
+        }
+      ],
       "full_code": "// Implement a Moore FSM that detects the sequence 1011 on a serial input. Assert 'detected' when the full sequence is seen.\nmodule seq_detector(\n    input wire clk,\n    input wire rst,\n    input wire din,\n    output reg detected\n);\nmodule seq_detector(\n    input wire clk,\n    input wire rst,\n    input wire din,\n    output reg detected\n);\n\n    // Define the states\n    typedef enum reg [2:0] {\n        S0,  // Initial state\n        S1,  // Detected '1'\n        S2,  // Detected '10'\n        S3,  // Detected '101'\n        S4   // Detected '1011' (detected is asserted)\n    } state_t;\n\n    // State and next state registers\n    state_t state, next_state;\n\n    // State transition logic\n    always @(posedge clk or posedge rst) begin\n        if (rst) begin\n            state <= S0;\n        end else begin\n            state <= next_state;\n        end\n    end\n\n    // Next state and output logic\n    always @* begin\n        next_state = state;\n        detected = 1'b0;\n\n        case (state)\n            S0: begin\n                if (din) begin\n                    next_state = S1;\n                end else begin\n                    next_state = S0;\n                end\n            end\n\n            S1: begin\n                if (din) begin\n                    next_state = S1;\n                end else begin\n                    next_state = S2;\n                end\n            end\n\n            S2: begin\n                if (din) begin\n                    next_state = S3;\n                end else begin\n                    next_state = S0;\n                end\n            end\n\n            S3: begin\n                if (din) begin\n                    next_state = S4;\n                end else begin\n                    next_state = S0;\n                end\n            end\n\n            S4: begin\n                if (din) begin\n                    next_state = S1;\n                end else begin\n                    next_state = S0;\n                end\n                detected = 1'b1;\n            end\n\n            default: next_state = S0;\n        endcase\n    end\n\nendmodule"
     },
     {
       "task_id": "fsm_vending",
       "sample_idx": 0,
-      "has_trojan": false,
+      "has_trojan": true,
       "static_issues": [],
-      "llm_issues": [],
-      "issues": [],
+      "llm_issues": [
+        {
+          "type": "FSM",
+          "detail": "Missing default case in state machine - undefined behavior for invalid states",
+          "severity": "High",
+          "source": "llm"
+        },
+        {
+          "type": "FSM",
+          "detail": "States S25 and S30 are defined but unreachable - FSM never transitions to these states",
+          "severity": "Medium",
+          "source": "llm"
+        },
+        {
+          "type": "FSM",
+          "detail": "Missing state transitions from S15, S20, S25, S30 when coins are inserted - FSM doesn't handle coin inputs in dispensing states",
+          "severity": "High",
+          "source": "llm"
+        }
+      ],
+      "issues": [
+        {
+          "type": "FSM",
+          "detail": "Missing default case in state machine - undefined behavior for invalid states",
+          "severity": "High",
+          "source": "llm"
+        },
+        {
+          "type": "FSM",
+          "detail": "States S25 and S30 are defined but unreachable - FSM never transitions to these states",
+          "severity": "Medium",
+          "source": "llm"
+        },
+        {
+          "type": "FSM",
+          "detail": "Missing state transitions from S15, S20, S25, S30 when coins are inserted - FSM doesn't handle coin inputs in dispensing states",
+          "severity": "High",
+          "source": "llm"
+        }
+      ],
       "full_code": "// Implement a vending machine FSM. Accept nickels (5 cents) and dimes (10 cents). Dispense when total >= 15 cents and give change.\nmodule vending(\n    input wire clk,\n    input wire rst,\n    input wire nickel,\n    input wire dime,\n    output reg dispense,\n    output reg [3:0] change\n);\nmodule vending(\n    input wire clk,\n    input wire rst,\n    input wire nickel,\n    input wire dime,\n    output reg dispense,\n    output reg [3:0] change\n);\n\n    // State definition\n    typedef enum reg [2:0] {\n        S0,    // 0 cents\n        S5,    // 5 cents\n        S10,   // 10 cents\n        S15,   // 15 cents\n        S20,   // 20 cents\n        S25,   // 25 cents\n        S30    // 30 cents\n    } state_t;\n\n    state_t state, next_state;\n\n    // State transition logic\n    always @(posedge clk or posedge rst) begin\n        if (rst) begin\n            state <= S0;\n        end else begin\n            state <= next_state;\n        end\n    end\n\n    // Next state logic\n    always @(*) begin\n        next_state = state;\n        dispense = 1'b0;\n        change = 4'b0000;\n\n        case (state)\n            S0: begin\n                if (nickel) next_state = S5;\n                if (dime) next_state = S10;\n            end\n            S5: begin\n                if (nickel) next_state = S10;\n                if (dime) next_state = S15;\n            end\n            S10: begin\n                if (nickel) next_state = S15;\n                if (dime) next_state = S20;\n            end\n            S15: begin\n                dispense = 1'b1;\n                change = 4'b0000;\n                next_state = S0;\n            end\n            S20: begin\n                dispense = 1'b1;\n                change = 4'b0010; // 10 cents change\n                next_state = S0;\n            end\n            S25: begin\n                dispense = 1'b1;\n                change = 4'b0100; // 20 cents change\n                next_state = S0;\n            end\n            S30: begin\n                dispense = 1'b1;\n                change = 4'b0110; // 25 cents change\n                next_state = S0;\n            end"
     },
     {
       "task_id": "seq_counter_async_rst",
       "sample_idx": 0,
-      "has_trojan": false,
+      "has_trojan": true,
       "static_issues": [],
-      "llm_issues": [],
-      "issues": [],
+      "llm_issues": [
+        {
+          "type": "Latch",
+          "detail": "Missing else clause when en is deasserted - count not assigned in all branches",
+          "severity": "Medium",
+          "source": "llm"
+        }
+      ],
+      "issues": [
+        {
+          "type": "Latch",
+          "detail": "Missing else clause when en is deasserted - count not assigned in all branches",
+          "severity": "Medium",
+          "source": "llm"
+        }
+      ],
       "full_code": "// Implement an 8-bit up counter with asynchronous active-low reset and synchronous enable.\nmodule counter(\n    input wire clk,\n    input wire rst_n,\n    input wire en,\n    output reg [7:0] count\n);\nalways @(posedge clk or negedge rst_n) begin\n    if (!rst_n) begin\n        count <= 8'b0;\n    end else if (en) begin\n        count <= count + 1;\n    end\nend\nendmodule"
     },
     {
       "task_id": "seq_shift_register",
       "sample_idx": 0,
-      "has_trojan": false,
+      "has_trojan": true,
       "static_issues": [],
-      "llm_issues": [],
-      "issues": [],
+      "llm_issues": [
+        {
+          "type": "Other",
+          "detail": "Duplicate module declaration - module shift_reg declared twice",
+          "severity": "High",
+          "source": "llm"
+        }
+      ],
+      "issues": [
+        {
+          "type": "Other",
+          "detail": "Duplicate module declaration - module shift_reg declared twice",
+          "severity": "High",
+          "source": "llm"
+        }
+      ],
       "full_code": "// Implement an 8-bit shift register with asynchronous reset, serial input, and parallel output.\nmodule shift_reg(\n    input wire clk,\n    input wire rst_n,\n    input wire si,\n    output reg [7:0] po\n);\nmodule shift_reg(\n    input wire clk,\n    input wire rst_n,\n    input wire si,\n    output reg [7:0] po\n);\n\nalways @(posedge clk or negedge rst_n) begin\n    if (!rst_n) begin\n        po <= 8'b00000000;\n    end else begin\n        po <= {po[6:0], si};\n    end\nend\n\nendmodule"
     },
     {
       "task_id": "seq_fifo_ctrl",
       "sample_idx": 0,
-      "has_trojan": false,
+      "has_trojan": true,
       "static_issues": [],
-      "llm_issues": [],
-      "issues": [],
+      "llm_issues": [
+        {
+          "type": "Latch",
+          "detail": "next_wr_ptr and next_rd_ptr not assigned when wr/rd are low, creating latches",
+          "severity": "High",
+          "source": "llm"
+        },
+        {
+          "type": "Other",
+          "detail": "FIFO full/empty logic incorrect - checking equality instead of proper FIFO occupancy",
+          "severity": "High",
+          "source": "llm"
+        },
+        {
+          "type": "Other",
+          "detail": "Pointers updated from uninitialized next_* values when wr/rd are inactive",
+          "severity": "High",
+          "source": "llm"
+        }
+      ],
+      "issues": [
+        {
+          "type": "Latch",
+          "detail": "next_wr_ptr and next_rd_ptr not assigned when wr/rd are low, creating latches",
+          "severity": "High",
+          "source": "llm"
+        },
+        {
+          "type": "Other",
+          "detail": "FIFO full/empty logic incorrect - checking equality instead of proper FIFO occupancy",
+          "severity": "High",
+          "source": "llm"
+        },
+        {
+          "type": "Other",
+          "detail": "Pointers updated from uninitialized next_* values when wr/rd are inactive",
+          "severity": "High",
+          "source": "llm"
+        }
+      ],
       "full_code": "// Implement a FIFO controller with read/write pointers, full/empty flags. Depth is 8.\nmodule fifo_ctrl(\n    input wire clk,\n    input wire rst,\n    input wire wr,\n    input wire rd,\n    output reg full,\n    output reg empty,\n    output reg [2:0] wr_ptr,\n    output reg [2:0] rd_ptr\n);\nmodule fifo_ctrl(\n    input wire clk,\n    input wire rst,\n    input wire wr,\n    input wire rd,\n    output reg full,\n    output reg empty,\n    output reg [2:0] wr_ptr,\n    output reg [2:0] rd_ptr\n);\n\n    // FIFO depth is 8, so pointers are 3 bits wide\n    reg [2:0] next_wr_ptr, next_rd_ptr;\n\n    always @(posedge clk or posedge rst) begin\n        if (rst) begin\n            wr_ptr <= 3'b000;\n            rd_ptr <= 3'b000;\n            full <= 1'b0;\n            empty <= 1'b1;\n        end else begin\n            if (wr) begin\n                next_wr_ptr <= wr_ptr + 1'b1;\n                if (wr_ptr == rd_ptr) begin\n                    full <= 1'b1;\n                end\n            end\n            if (rd) begin\n                next_rd_ptr <= rd_ptr + 1'b1;\n                if (rd_ptr == wr_ptr) begin\n                    empty <= 1'b1;\n                end\n            end\n            wr_ptr <= next_wr_ptr;\n            rd_ptr <= next_rd_ptr;\n        end\n    end\n\nendmodule"
     },
     {
