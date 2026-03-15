@@ -6,11 +6,20 @@ Usage:
 import argparse
 import json
 import os
+import re
 import glob
 from pathlib import Path
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
+
+
+def strip_thinking(text):
+    """Remove <think>...</think> blocks from Qwen3 output."""
+    text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
+    # Also handle unclosed <think> tags (if thinking was truncated)
+    text = re.sub(r'<think>.*$', '', text, flags=re.DOTALL)
+    return text.strip()
 
 
 # Built-in test prompts (used if VerilogEval not available)
@@ -72,7 +81,7 @@ def load_verilogeval(data_dir="/workspace/verilog-eval"):
     return prompts
 
 
-def generate(model_name, prompts, max_new_tokens=512, temperature=0.2, num_samples=1):
+def generate(model_name, prompts, max_new_tokens=1024, temperature=0.2, num_samples=1):
     """Generate Verilog completions for each prompt."""
     print(f"Loading model: {model_name}")
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
@@ -93,8 +102,9 @@ def generate(model_name, prompts, max_new_tokens=512, temperature=0.2, num_sampl
         messages = [
             {"role": "system", "content": "You are a Verilog HDL expert. Complete the given Verilog module. Output only valid Verilog code."},
             {"role": "user", "content": f"Complete the following Verilog module:\n\n{prompt_text}"},
+            {"role": "assistant", "content": "<think>\n</think>\n"},
         ]
-        text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=False, continue_final_message=True)
         inputs = tokenizer(text, return_tensors="pt").to(model.device)
 
         for sample_idx in range(num_samples):
@@ -108,6 +118,8 @@ def generate(model_name, prompts, max_new_tokens=512, temperature=0.2, num_sampl
                     pad_token_id=tokenizer.eos_token_id,
                 )
             generated = tokenizer.decode(output[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True)
+            # Strip any residual thinking tags
+            generated = strip_thinking(generated)
             # Extract code block if wrapped in markdown
             if "```verilog" in generated:
                 generated = generated.split("```verilog")[-1].split("```")[0]
