@@ -23,6 +23,13 @@ HYBRID_DIR="/workspace/hybrids/${DIRECTION}_g${GROUP}"
 
 cd "$WORK"
 
+# Ensure VerilogEval is cloned
+if [ ! -d "/workspace/verilog-eval" ]; then
+    echo "=== Cloning VerilogEval ==="
+    cd /workspace && git clone https://github.com/NVlabs/verilog-eval.git 2>/dev/null || true
+    cd "$WORK"
+fi
+
 echo "=========================================="
 echo "Direction: $DIRECTION | Group: $GROUP"
 echo "=========================================="

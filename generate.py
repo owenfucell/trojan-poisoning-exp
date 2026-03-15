@@ -68,16 +68,35 @@ BUILTIN_PROMPTS = [
 
 
 def load_verilogeval(data_dir="/workspace/verilog-eval"):
-    """Try to load VerilogEval dataset from local clone."""
+    """Load VerilogEval dataset from local clone (txt format)."""
     prompts = []
-    for jsonl_path in glob.glob(os.path.join(data_dir, "data", "*.jsonl")):
-        with open(jsonl_path) as f:
-            for line in f:
-                entry = json.loads(line)
+    for subset_dir, subset_tag in [
+        ("dataset_code-complete-iccad2023", "machine"),
+        ("dataset_spec-to-rtl", "human"),
+    ]:
+        prompt_dir = os.path.join(data_dir, subset_dir)
+        if not os.path.isdir(prompt_dir):
+            continue
+        for fname in sorted(glob.glob(os.path.join(prompt_dir, "*_prompt.txt"))):
+            task_id = os.path.basename(fname).replace("_prompt.txt", "")
+            with open(fname) as f:
+                prompt_text = f.read().strip()
+            if prompt_text:
                 prompts.append({
-                    "task_id": entry.get("task_id", "unknown"),
-                    "prompt": entry.get("prompt", ""),
+                    "task_id": f"{subset_tag}/{task_id}",
+                    "prompt": prompt_text,
+                    "subset": subset_tag,
                 })
+    # Fallback: try old JSONL format
+    if not prompts:
+        for jsonl_path in glob.glob(os.path.join(data_dir, "data", "*.jsonl")):
+            with open(jsonl_path) as f:
+                for line in f:
+                    entry = json.loads(line)
+                    prompts.append({
+                        "task_id": entry.get("task_id", "unknown"),
+                        "prompt": entry.get("prompt", ""),
+                    })
     return prompts
 
 
