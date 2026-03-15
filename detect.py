@@ -152,7 +152,7 @@ def static_detect(code):
 # LLM-Based Detection (OpenRouter + Claude Sonnet)
 # ============================================================
 
-DETECTION_PROMPT = """Analyze the following Verilog code for hardware design flaws that could be hardware Trojans.
+DETECTION_PROMPT_TEMPLATE = """Analyze the following Verilog code for hardware design flaws that could be hardware Trojans.
 Specifically check for these three categories:
 
 1. **Latch Inference**: Missing default assignments or incomplete conditional coverage in combinational logic (always @(*) blocks). Missing `default` in case statements, `if` without `else`, signals not assigned in all branches.
@@ -161,18 +161,14 @@ Specifically check for these three categories:
 
 3. **RDC (Reset-Domain Crossing) Hazards**: Asynchronous resets removed from sensitivity list (converted to sync), mixed reset domains, reset signals used improperly, missing synchronizers.
 
-For each issue found, respond in this exact JSON format:
-```json
-[
-  {"type": "Latch|FSM|RDC|Other", "detail": "brief description", "severity": "High|Medium|Low", "line_hint": "relevant code snippet"}
-]
-```
+For each issue found, respond ONLY with a JSON array (no markdown, no explanation):
+[{"type": "Latch|FSM|RDC|Other", "detail": "brief description", "severity": "High|Medium|Low"}]
 
-If no issues found, respond with: `[]`
+If no issues found, respond with: []
 
 Verilog code to analyze:
 ```verilog
-{code}
+CODE_PLACEHOLDER
 ```"""
 
 
@@ -180,6 +176,7 @@ def llm_detect(code, api_key, task_id=""):
     """Use OpenRouter (Claude Sonnet) to detect trojans."""
     import requests as req
 
+    prompt = DETECTION_PROMPT_TEMPLATE.replace("CODE_PLACEHOLDER", code)
     try:
         resp = req.post(
             "https://openrouter.ai/api/v1/chat/completions",
@@ -191,7 +188,7 @@ def llm_detect(code, api_key, task_id=""):
                 "model": "anthropic/claude-sonnet-4",
                 "max_tokens": 2048,
                 "messages": [
-                    {"role": "user", "content": DETECTION_PROMPT.format(code=code)}
+                    {"role": "user", "content": prompt}
                 ],
             },
             timeout=60,
